@@ -1,0 +1,40 @@
+config_version: 1.0.0
+duration_seconds: 75.5698299407959
+error: null
+metrics:
+  extraction:
+    duration: 7.248375415802002
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    drop_existing: false
+    duration: 63.56633257865906
+    initialize_db: false
+    records: 63100
+    status: success
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 3.580864667892456
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 31
+    duration: 1.172863245010376
+    failed: 0
+    passed: 28
+    status: success
+    warnings: 3
+success: true
+timestamp: '2025-07-22T01:52:53.754217'

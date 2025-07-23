@@ -1,0 +1,41 @@
+config_version: 1.0.0
+duration_seconds: 66.77798271179199
+error: Validation failed with 1 critical issues
+metrics:
+  extraction:
+    duration: 7.006789922714233
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    drop_existing: false
+    duration: 52.25098705291748
+    initialize_db: false
+    records: 63100
+    status: success
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 6.870460510253906
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 31
+    duration: 0.641279935836792
+    error: Validation failed with 1 critical issues
+    failed: 1
+    passed: 27
+    status: failed
+    warnings: 3
+success: false
+timestamp: '2025-07-22T01:34:42.233233'

@@ -1,0 +1,97 @@
+config_version: 1.0.0
+duration_seconds: 52.09106659889221
+error: '(psycopg2.errors.NumericValueOutOfRange) integer out of range
+
+
+  [SQL: INSERT INTO fact_financial (company_sk, date_sk, revenues, net_income, operating_income,
+  rd_expenses, assets, liabilities, stockholders_equity, cash_and_equivalents, operating_cash_flow,
+  goodwill, intangible_assets, patents_issued, data_completeness, data_freshness,
+  fiscal_year, fiscal_period, created_at, updated_at) VALUES (%(company_sk)s, %(date_sk)s,
+  %(revenues)s, %(net_income)s, %(operating_income)s, %(rd_expenses)s, %(assets)s,
+  %(liabilities)s, %(stockholders_equity)s, %(cash_and_equivalents)s, %(operating_cash_flow)s,
+  %(goodwill)s, %(intangible_assets)s, %(patents_issued)s, %(data_completeness)s,
+  %(data_freshness)s, %(fiscal_year)s, %(fiscal_period)s, %(created_at)s, %(updated_at)s)
+  ON CONFLICT (company_sk, fiscal_year, fiscal_period) DO UPDATE SET revenues = excluded.revenues,
+  net_income = excluded.net_income, operating_income = excluded.operating_income,
+  rd_expenses = excluded.rd_expenses, assets = excluded.assets, liabilities = excluded.liabilities,
+  stockholders_equity = excluded.stockholders_equity, cash_and_equivalents = excluded.cash_and_equivalents,
+  operating_cash_flow = excluded.operating_cash_flow, goodwill = excluded.goodwill,
+  intangible_assets = excluded.intangible_assets, patents_issued = excluded.patents_issued,
+  data_completeness = excluded.data_completeness, data_freshness = excluded.data_freshness,
+  updated_at = %(param_1)s RETURNING fact_financial.fact_id]
+
+  [parameters: {''company_sk'': 1, ''date_sk'': 20251201, ''revenues'': 154883000.0,
+  ''net_income'': -34358000.0, ''operating_income'': -39328000.0, ''rd_expenses'':
+  64245000.0, ''assets'': 903393000.0, ''liabilities'': 196498000.0, ''stockholders_equity'':
+  706895000.0, ''cash_and_equivalents'': nan, ''operating_cash_flow'': 34351000.0,
+  ''goodwill'': 4511000.0, ''intangible_assets'': 15192000.0, ''patents_issued'':
+  nan, ''data_completeness'': 83.33333333, ''data_freshness'': ''Recent'', ''fiscal_year'':
+  2025, ''fiscal_period'': ''FY'', ''created_at'': Timestamp(''2025-07-22 00:44:47.953434''),
+  ''updated_at'': datetime.datetime(2025, 7, 22, 0, 45, 31, 240252), ''param_1'':
+  datetime.datetime(2025, 7, 22, 0, 45, 31, 239214)}]
+
+  (Background on this error at: https://sqlalche.me/e/20/9h9h)'
+metrics:
+  extraction:
+    duration: 6.917517423629761
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    duration: 0
+    error: '(psycopg2.errors.NumericValueOutOfRange) integer out of range
+
+
+      [SQL: INSERT INTO fact_financial (company_sk, date_sk, revenues, net_income,
+      operating_income, rd_expenses, assets, liabilities, stockholders_equity, cash_and_equivalents,
+      operating_cash_flow, goodwill, intangible_assets, patents_issued, data_completeness,
+      data_freshness, fiscal_year, fiscal_period, created_at, updated_at) VALUES (%(company_sk)s,
+      %(date_sk)s, %(revenues)s, %(net_income)s, %(operating_income)s, %(rd_expenses)s,
+      %(assets)s, %(liabilities)s, %(stockholders_equity)s, %(cash_and_equivalents)s,
+      %(operating_cash_flow)s, %(goodwill)s, %(intangible_assets)s, %(patents_issued)s,
+      %(data_completeness)s, %(data_freshness)s, %(fiscal_year)s, %(fiscal_period)s,
+      %(created_at)s, %(updated_at)s) ON CONFLICT (company_sk, fiscal_year, fiscal_period)
+      DO UPDATE SET revenues = excluded.revenues, net_income = excluded.net_income,
+      operating_income = excluded.operating_income, rd_expenses = excluded.rd_expenses,
+      assets = excluded.assets, liabilities = excluded.liabilities, stockholders_equity
+      = excluded.stockholders_equity, cash_and_equivalents = excluded.cash_and_equivalents,
+      operating_cash_flow = excluded.operating_cash_flow, goodwill = excluded.goodwill,
+      intangible_assets = excluded.intangible_assets, patents_issued = excluded.patents_issued,
+      data_completeness = excluded.data_completeness, data_freshness = excluded.data_freshness,
+      updated_at = %(param_1)s RETURNING fact_financial.fact_id]
+
+      [parameters: {''company_sk'': 1, ''date_sk'': 20251201, ''revenues'': 154883000.0,
+      ''net_income'': -34358000.0, ''operating_income'': -39328000.0, ''rd_expenses'':
+      64245000.0, ''assets'': 903393000.0, ''liabilities'': 196498000.0, ''stockholders_equity'':
+      706895000.0, ''cash_and_equivalents'': nan, ''operating_cash_flow'': 34351000.0,
+      ''goodwill'': 4511000.0, ''intangible_assets'': 15192000.0, ''patents_issued'':
+      nan, ''data_completeness'': 83.33333333, ''data_freshness'': ''Recent'', ''fiscal_year'':
+      2025, ''fiscal_period'': ''FY'', ''created_at'': Timestamp(''2025-07-22 00:44:47.953434''),
+      ''updated_at'': datetime.datetime(2025, 7, 22, 0, 45, 31, 240252), ''param_1'':
+      datetime.datetime(2025, 7, 22, 0, 45, 31, 239214)}]
+
+      (Background on this error at: https://sqlalche.me/e/20/9h9h)'
+    records: 0
+    status: failed
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 3.143831491470337
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-07-22T01:45:31.316916'

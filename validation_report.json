@@ -1,0 +1,260 @@
+{
+  "timestamp": "2025-07-22T01:32:01.656712",
+  "summary": {
+    "total_checks": 31,
+    "passed": 27,
+    "warnings": 3,
+    "failed": 1,
+    "success_rate": 87.09677419354838
+  },
+  "results": [
+    {
+      "category": "Source Files",
+      "check": "File exists: realistic_trl_predictions.xlsx",
+      "status": "PASS",
+      "details": "Size: 0.02 MB",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:00.875592"
+    },
+    {
+      "category": "Source Files",
+      "check": "File exists: pubmed_articles_2015_2025_mergeds.xlsx",
+      "status": "PASS",
+      "details": "Size: 23.18 MB",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:00.875592"
+    },
+    {
+      "category": "Source Files",
+      "check": "File exists: abi_targeted_biotech_dataset_2019_2025.csv",
+      "status": "PASS",
+      "details": "Size: 1.12 MB",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:00.876591"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "trl: Not empty",
+      "status": "PASS",
+      "details": "100 rows, 16 columns",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.014277"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "trl: Null percentage < 5.0%",
+      "status": "PASS",
+      "details": "0.00% nulls",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.014940"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "pubmed: Not empty",
+      "status": "PASS",
+      "details": "30259 rows, 16 columns",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.176102"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "pubmed: Null percentage < 5.0%",
+      "status": "PASS",
+      "details": "2.23% nulls",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.183769"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "companies: Not empty",
+      "status": "PASS",
+      "details": "3779 rows, 25 columns",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.208893"
+    },
+    {
+      "category": "Extracted Data",
+      "check": "companies: Null percentage < 5.0%",
+      "status": "WARN",
+      "details": "16.87% nulls",
+      "severity": "warning",
+      "timestamp": "2025-07-22 01:32:01.209261"
+    },
+    {
+      "category": "Transformed Data",
+      "check": "dim_date: Surrogate keys unique",
+      "status": "PASS",
+      "details": "5844 unique keys",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.228949"
+    },
+    {
+      "category": "Transformed Data",
+      "check": "dim_date: Surrogate keys sequential",
+      "status": "WARN",
+      "details": "Range: 20150101 to 20301231",
+      "severity": "warning",
+      "timestamp": "2025-07-22 01:32:01.228949"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: dim_company",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.506202"
+    },
+    {
+      "category": "Database",
+      "check": "dim_company: Has data",
+      "status": "PASS",
+      "details": "730 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.515150"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: dim_date",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.517154"
+    },
+    {
+      "category": "Database",
+      "check": "dim_date: Has data",
+      "status": "PASS",
+      "details": "5844 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.517730"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: dim_publication",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.517730"
+    },
+    {
+      "category": "Database",
+      "check": "dim_publication: Has data",
+      "status": "PASS",
+      "details": "28481 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.560702"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: dim_technology",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.561704"
+    },
+    {
+      "category": "Database",
+      "check": "dim_technology: Has data",
+      "status": "PASS",
+      "details": "25 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.568506"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: fact_financial",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.569508"
+    },
+    {
+      "category": "Database",
+      "check": "fact_financial: Has data",
+      "status": "PASS",
+      "details": "3778 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.581685"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: fact_scoring",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.582683"
+    },
+    {
+      "category": "Database",
+      "check": "fact_scoring: Has data",
+      "status": "PASS",
+      "details": "730 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.596918"
+    },
+    {
+      "category": "Database",
+      "check": "Table exists: fact_technology",
+      "status": "PASS",
+      "details": "",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.598455"
+    },
+    {
+      "category": "Database",
+      "check": "fact_technology: Has data",
+      "status": "PASS",
+      "details": "23511 rows",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.624384"
+    },
+    {
+      "category": "Referential Integrity",
+      "check": "fact_technology \u2192 dim_technology",
+      "status": "PASS",
+      "details": "0 orphaned records",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.639894"
+    },
+    {
+      "category": "Referential Integrity",
+      "check": "fact_financial \u2192 dim_company",
+      "status": "PASS",
+      "details": "0 orphaned records",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.643790"
+    },
+    {
+      "category": "Business Rules",
+      "check": "TRL values between 1-9",
+      "status": "PASS",
+      "details": "0 invalid TRL values",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.645790"
+    },
+    {
+      "category": "Business Rules",
+      "check": "Financial metrics reasonable",
+      "status": "WARN",
+      "details": "1 suspicious records",
+      "severity": "warning",
+      "timestamp": "2025-07-22 01:32:01.648789"
+    },
+    {
+      "category": "Business Rules",
+      "check": "Scores between 0-100 (NULL allowed)",
+      "status": "FAIL",
+      "details": "411 invalid scores",
+      "severity": "critical",
+      "timestamp": "2025-07-22 01:32:01.649925"
+    },
+    {
+      "category": "Business Rules",
+      "check": "Publication dates in range",
+      "status": "PASS",
+      "details": "0 dates outside range",
+      "severity": "info",
+      "timestamp": "2025-07-22 01:32:01.656712"
+    }
+  ]
+}

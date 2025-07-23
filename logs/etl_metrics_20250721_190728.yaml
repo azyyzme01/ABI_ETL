@@ -1,0 +1,108 @@
+config_version: 1.0.0
+duration_seconds: 15.201099395751953
+error: '(psycopg2.errors.NumericValueOutOfRange) integer out of range
+
+
+  [SQL: INSERT INTO dim_publication (link, title, authors, summary, keywords, country,
+  trl, trl_stage, trl_category, maturity, impact_factor, citation_count, peer_reviewed,
+  publication_date, year, month, technologies, tech_category, article_type, research_domain,
+  created_at, updated_at) VALUES (%(link)s, %(title)s, %(authors)s, %(summary)s, %(keywords)s,
+  %(country)s, %(trl)s, %(trl_stage)s, %(trl_category)s, %(maturity)s, %(impact_factor)s,
+  %(citation_count)s, %(peer_reviewed)s, %(publication_date)s, %(year)s, %(month)s,
+  %(technologies)s, %(tech_category)s, %(article_type)s, %(research_domain)s, %(created_at)s,
+  %(updated_at)s) ON CONFLICT (link) DO UPDATE SET title = excluded.title, authors
+  = excluded.authors, summary = excluded.summary, keywords = excluded.keywords, country
+  = excluded.country, trl = excluded.trl, trl_stage = excluded.trl_stage, trl_category
+  = excluded.trl_category, maturity = excluded.maturity, publication_date = excluded.publication_date,
+  year = excluded.year, month = excluded.month, technologies = excluded.technologies,
+  tech_category = excluded.tech_category, article_type = excluded.article_type, research_domain
+  = excluded.research_domain, updated_at = %(param_1)s RETURNING dim_publication.publication_sk]
+
+  [parameters: {''link'': ''https://pubmed.ncbi.nlm.nih.gov/26479470/'', ''title'':
+  ''CXCL4 mediates tumor regrowth after chemotherapy by suppression of antitumor immunity.'',
+  ''authors'': ''Zhang Yang, Gao Jing, Wang Xia, Deng Shaorong, Ye Hao, Guan Wen,
+  Wu Mingyuan, Zhu Shunying, Yu Yan, Han Wei'', ''summary'': ''The recurrence of colorectal
+  cancer after chemotherapy is the leading cause of its high mortality. We propose
+  that elucidating the mechanisms of tumo ... (1083 characters truncated) ... egrowth
+  after chemotherapy. Our findings provide a novel target for developing therapeutics
+  aiming to increase antitumor immunity after chemotherapy.'', ''keywords'': ''CTLs,
+  CXCL4, anti-tumor immunity, chemotherapy, colon cancer, regrowth, tumor microenvironment'',
+  ''country'': ''China'', ''trl'': 3, ''trl_stage'': ''RECHERCHE'', ''trl_category'':
+  ''Preuve de concept'', ''maturity'': 30, ''impact_factor'': nan, ''citation_count'':
+  nan, ''peer_reviewed'': True, ''publication_date'': Timestamp(''2015-01-01 00:00:00''),
+  ''year'': 2015, ''month'': 1, ''technologies'': ''chemotherapy'', ''tech_category'':
+  ''therapeutic'', ''article_type'': ''Preclinical Study'', ''research_domain'': ''Oncology'',
+  ''created_at'': Timestamp(''2025-07-21 18:07:20.320301''), ''updated_at'': Timestamp(''2025-07-21
+  18:07:20.320301''), ''param_1'': datetime.datetime(2025, 7, 21, 18, 7, 28, 549769)}]
+
+  (Background on this error at: https://sqlalche.me/e/20/9h9h)'
+metrics:
+  extraction:
+    duration: 6.474395036697388
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    duration: 0
+    error: '(psycopg2.errors.NumericValueOutOfRange) integer out of range
+
+
+      [SQL: INSERT INTO dim_publication (link, title, authors, summary, keywords,
+      country, trl, trl_stage, trl_category, maturity, impact_factor, citation_count,
+      peer_reviewed, publication_date, year, month, technologies, tech_category, article_type,
+      research_domain, created_at, updated_at) VALUES (%(link)s, %(title)s, %(authors)s,
+      %(summary)s, %(keywords)s, %(country)s, %(trl)s, %(trl_stage)s, %(trl_category)s,
+      %(maturity)s, %(impact_factor)s, %(citation_count)s, %(peer_reviewed)s, %(publication_date)s,
+      %(year)s, %(month)s, %(technologies)s, %(tech_category)s, %(article_type)s,
+      %(research_domain)s, %(created_at)s, %(updated_at)s) ON CONFLICT (link) DO UPDATE
+      SET title = excluded.title, authors = excluded.authors, summary = excluded.summary,
+      keywords = excluded.keywords, country = excluded.country, trl = excluded.trl,
+      trl_stage = excluded.trl_stage, trl_category = excluded.trl_category, maturity
+      = excluded.maturity, publication_date = excluded.publication_date, year = excluded.year,
+      month = excluded.month, technologies = excluded.technologies, tech_category
+      = excluded.tech_category, article_type = excluded.article_type, research_domain
+      = excluded.research_domain, updated_at = %(param_1)s RETURNING dim_publication.publication_sk]
+
+      [parameters: {''link'': ''https://pubmed.ncbi.nlm.nih.gov/26479470/'', ''title'':
+      ''CXCL4 mediates tumor regrowth after chemotherapy by suppression of antitumor
+      immunity.'', ''authors'': ''Zhang Yang, Gao Jing, Wang Xia, Deng Shaorong, Ye
+      Hao, Guan Wen, Wu Mingyuan, Zhu Shunying, Yu Yan, Han Wei'', ''summary'': ''The
+      recurrence of colorectal cancer after chemotherapy is the leading cause of its
+      high mortality. We propose that elucidating the mechanisms of tumo ... (1083
+      characters truncated) ... egrowth after chemotherapy. Our findings provide a
+      novel target for developing therapeutics aiming to increase antitumor immunity
+      after chemotherapy.'', ''keywords'': ''CTLs, CXCL4, anti-tumor immunity, chemotherapy,
+      colon cancer, regrowth, tumor microenvironment'', ''country'': ''China'', ''trl'':
+      3, ''trl_stage'': ''RECHERCHE'', ''trl_category'': ''Preuve de concept'', ''maturity'':
+      30, ''impact_factor'': nan, ''citation_count'': nan, ''peer_reviewed'': True,
+      ''publication_date'': Timestamp(''2015-01-01 00:00:00''), ''year'': 2015, ''month'':
+      1, ''technologies'': ''chemotherapy'', ''tech_category'': ''therapeutic'', ''article_type'':
+      ''Preclinical Study'', ''research_domain'': ''Oncology'', ''created_at'': Timestamp(''2025-07-21
+      18:07:20.320301''), ''updated_at'': Timestamp(''2025-07-21 18:07:20.320301''),
+      ''param_1'': datetime.datetime(2025, 7, 21, 18, 7, 28, 549769)}]
+
+      (Background on this error at: https://sqlalche.me/e/20/9h9h)'
+    records: 0
+    status: failed
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 3.512727975845337
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-07-21T19:07:28.564899'

@@ -1,0 +1,30 @@
+project:
+  name: ABI ETL Pipeline
+  version: 1.0.0
+  description: ETL pipeline for ABI biotech intelligence platform
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  archive: data/archive
+  exports: data/exports
+  logs: logs
+files:
+  trl_predictions: realistic_trl_predictions.xlsx
+  pubmed_articles: pubmed_articles_2015_2025_mergeds.xlsx
+  biotech_companies: abi_targeted_biotech_dataset_2019_2025.csv
+database:
+  dialect: postgresql
+  driver: psycopg2
+  host: localhost
+  port: 5432
+  database: abi_warehouse
+  schema: public
+validation:
+  null_threshold: 0.05
+  duplicate_threshold: 0.01
+  date_range:
+    min: '2015-01-01'
+    max: '2030-12-31'
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
