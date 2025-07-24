@@ -239,6 +239,30 @@ class DataLoader:
         
         mapping = {}
         
+        # Helper function to clean values for database insertion
+        def clean_value(val):
+            if pd.isna(val):
+                return None
+            if isinstance(val, (int, float)):
+                # Check for overflow values
+                if val > 2147483647:  # PostgreSQL Integer max value
+                    return None
+                if val < -2147483648:  # PostgreSQL Integer min value
+                    return None
+            return val
+        
+        def clean_int_value(val):
+            if pd.isna(val):
+                return None
+            try:
+                int_val = int(val)
+                # Check for PostgreSQL integer range
+                if int_val > 2147483647 or int_val < -2147483648:
+                    return None
+                return int_val
+            except (ValueError, OverflowError):
+                return None
+        
         with self.engine.begin() as conn:
             for _, row in df.iterrows():
                 link = row['link']
@@ -253,28 +277,28 @@ class DataLoader:
                     # Publication exists, get its surrogate key
                     mapping[link] = result[0]
                 else:
-                    # Insert new publication
+                    # Insert new publication with cleaned values
                     stmt = insert(DimPublication).values(
                         link=link,
-                        title=row.get('title'),
-                        authors=row.get('authors'),
-                        summary=row.get('summary'),
-                        keywords=row.get('keywords'),
-                        country=row.get('country'),
-                        trl=row.get('trl'),
-                        trl_stage=row.get('trl_stage'),
-                        trl_category=row.get('trl_category'),
-                        maturity=row.get('maturity'),
-                        year=row.get('year'),
-                        month=row.get('month'),
-                        technologies=row.get('technologies'),
-                        tech_category=row.get('tech_category'),
-                        article_type=row.get('article_type'),
-                        research_domain=row.get('research_domain'),
-                        impact_factor=row.get('impact_factor'),
-                        citation_count=row.get('citation_count'),
+                        title=clean_value(row.get('title')),
+                        authors=clean_value(row.get('authors')),
+                        summary=clean_value(row.get('summary')),
+                        keywords=clean_value(row.get('keywords')),
+                        country=clean_value(row.get('country')),
+                        trl=clean_int_value(row.get('trl')),
+                        trl_stage=clean_value(row.get('trl_stage')),
+                        trl_category=clean_value(row.get('trl_category')),
+                        maturity=clean_value(row.get('maturity')),
+                        year=clean_int_value(row.get('year')),
+                        month=clean_int_value(row.get('month')),
+                        technologies=clean_value(row.get('technologies')),
+                        tech_category=clean_value(row.get('tech_category')),
+                        article_type=clean_value(row.get('article_type')),
+                        research_domain=clean_value(row.get('research_domain')),
+                        impact_factor=clean_value(row.get('impact_factor')),
+                        citation_count=clean_value(row.get('citation_count')),
                         peer_reviewed=row.get('peer_reviewed', True),
-                        publication_date=row.get('publication_date'),
+                        publication_date=clean_value(row.get('publication_date')),
                         created_at=row.get('created_at', datetime.utcnow()),
                         updated_at=row.get('updated_at', datetime.utcnow())
                     )
@@ -422,8 +446,9 @@ class DataLoader:
         logger.info(f"Loaded {loaded_count} technology facts ({skipped_count} skipped due to missing dimensions)")
     
     def _load_financial_facts(self, df: pd.DataFrame) -> None:
-        """Load financial facts using surrogate key mappings"""
+        """Load financial facts using only actual dataset columns"""
         logger.info(f"Loading financial facts with {len(df)} records...")
+        logger.info(f"Available columns in financial facts: {list(df.columns)}")
         
         loaded_count = 0
         skipped_count = 0
@@ -450,45 +475,61 @@ class DataLoader:
                         return None
                     return int(val)
                 
-                # Insert fact record
+                # FIXED: Use ONLY the columns we actually have
                 stmt = insert(FactFinancial).values(
                     company_sk=company_sk,
                     date_sk=date_sk,
+                    
+                    # Core Financial Metrics from actual dataset
                     revenues=clean_value(row.get('revenues')),
                     net_income=clean_value(row.get('net_income')),
                     operating_income=clean_value(row.get('operating_income')),
-                    rd_expenses=clean_value(row.get('rd_expenses')),
-                    assets=clean_value(row.get('assets')),
-                    liabilities=clean_value(row.get('liabilities')),
+                    total_assets=clean_value(row.get('total_assets')),
+                    total_liabilities=clean_value(row.get('total_liabilities')),
                     stockholders_equity=clean_value(row.get('stockholders_equity')),
                     cash_and_equivalents=clean_value(row.get('cash_and_equivalents')),
+                    rd_expenses=clean_value(row.get('rd_expenses')),
                     operating_cash_flow=clean_value(row.get('operating_cash_flow')),
                     goodwill=clean_value(row.get('goodwill')),
                     intangible_assets=clean_value(row.get('intangible_assets')),
                     patents_issued=clean_int_value(row.get('patents_issued')),
-                    data_completeness=clean_value(row.get('data_completeness')),
-                    data_freshness=row.get('data_freshness'),
+                    
+                    # Calculated ratios
+                    rd_intensity=clean_value(row.get('rd_intensity')),
+                    net_margin=clean_value(row.get('net_margin')),
+                    roa=clean_value(row.get('roa')),
+                    roe=clean_value(row.get('roe')),
+                    
+                    # Data Quality
+                    data_completeness=clean_value(row.get('data_completeness', 1.0)),
+                    data_freshness=row.get('data_freshness', 'Current'),
+                    
+                    # Period
                     fiscal_year=row['fiscal_year'],
-                    fiscal_period=row['fiscal_period'],
+                    fiscal_period=row.get('fiscal_period', 'Annual'),
                     created_at=row.get('created_at', datetime.utcnow())
                 )
                 
-                # On conflict (duplicate grain), update metrics
+                # On conflict (duplicate grain), update all metrics
                 stmt = stmt.on_conflict_do_update(
                     index_elements=['company_sk', 'fiscal_year', 'fiscal_period'],
                     set_={
                         'revenues': stmt.excluded.revenues,
                         'net_income': stmt.excluded.net_income,
                         'operating_income': stmt.excluded.operating_income,
-                        'rd_expenses': stmt.excluded.rd_expenses,
-                        'assets': stmt.excluded.assets,
-                        'liabilities': stmt.excluded.liabilities,
+                        'total_assets': stmt.excluded.total_assets,
+                        'total_liabilities': stmt.excluded.total_liabilities,
                         'stockholders_equity': stmt.excluded.stockholders_equity,
                         'cash_and_equivalents': stmt.excluded.cash_and_equivalents,
+                        'rd_expenses': stmt.excluded.rd_expenses,
                         'operating_cash_flow': stmt.excluded.operating_cash_flow,
                         'goodwill': stmt.excluded.goodwill,
                         'intangible_assets': stmt.excluded.intangible_assets,
                         'patents_issued': stmt.excluded.patents_issued,
+                        'rd_intensity': stmt.excluded.rd_intensity,
+                        'net_margin': stmt.excluded.net_margin,
+                        'roa': stmt.excluded.roa,
+                        'roe': stmt.excluded.roe,
                         'data_completeness': stmt.excluded.data_completeness,
                         'data_freshness': stmt.excluded.data_freshness,
                         'updated_at': datetime.utcnow()

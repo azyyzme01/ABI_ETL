@@ -1,0 +1,25 @@
+config_version: 1.0.0
+duration_seconds: 7.0622398853302
+error: '''utf-8'' codec can''t decode byte 0xc9 in position 759: invalid continuation
+  byte'
+metrics:
+  extraction:
+    duration: 0
+    error: '''utf-8'' codec can''t decode byte 0xc9 in position 759: invalid continuation
+      byte'
+    records: 0
+    status: failed
+  loading:
+    duration: 0
+    records: 0
+    status: pending
+  transformation:
+    duration: 0
+    records: 0
+    status: pending
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-07-24T03:10:52.604848'

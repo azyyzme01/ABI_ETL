@@ -215,10 +215,42 @@ class DataTransformer:
                     return pd.Timestamp('2020-01-01')
             
             dim_pub['publication_date'] = dim_pub.apply(safe_date_creation, axis=1)
-        
+    
+        # FIXED: Clean numeric fields to avoid integer overflow
         # Extract TRL information
         if 'trl' in dim_pub.columns:
             dim_pub['trl'] = pd.to_numeric(dim_pub['trl'], errors='coerce')
+            # Ensure TRL is within valid range (1-9)
+            dim_pub['trl'] = dim_pub['trl'].where(
+                (dim_pub['trl'] >= 1) & (dim_pub['trl'] <= 9), 
+                None
+            )
+        
+        # FIXED: Clean maturity field (was causing integer overflow)
+        if 'maturity' in dim_pub.columns:
+            dim_pub['maturity'] = pd.to_numeric(dim_pub['maturity'], errors='coerce')
+            # Ensure maturity is within reasonable range
+            dim_pub['maturity'] = dim_pub['maturity'].where(
+                (dim_pub['maturity'] >= 0) & (dim_pub['maturity'] <= 100), 
+                None
+            )
+        
+        # FIXED: Clean year and month to ensure they're valid integers
+        if 'year' in dim_pub.columns:
+            dim_pub['year'] = pd.to_numeric(dim_pub['year'], errors='coerce')
+            # Ensure year is within reasonable range
+            dim_pub['year'] = dim_pub['year'].where(
+                (dim_pub['year'] >= 1900) & (dim_pub['year'] <= 2030), 
+                None
+            ).astype('Int64')  # Use nullable integer type
+        
+        if 'month' in dim_pub.columns:
+            dim_pub['month'] = pd.to_numeric(dim_pub['month'], errors='coerce')
+            # Ensure month is within valid range
+            dim_pub['month'] = dim_pub['month'].where(
+                (dim_pub['month'] >= 1) & (dim_pub['month'] <= 12), 
+                None
+            ).astype('Int64')  # Use nullable integer type
         
         # Handle other fields - keep original data as requested
         # Add placeholders for missing metrics (these would normally come from external sources)
@@ -337,16 +369,21 @@ class DataTransformer:
                 else:
                     trl_value = None
                 
+                # FIXED: Calculate actual metrics instead of NULL
+                maturity_score = self._calculate_maturity_score(pub_row, trl_value)
+                innovation_score = self._calculate_innovation_score(pub_row)
+                market_score = self._calculate_market_score(pub_row)
+                risk_assessment = self._calculate_risk_assessment(trl_value, pub_row)
+                
                 fact_record = {
                     'technology_natural_key': tech_name,
                     'publication_natural_key': pub_row['Lien'],
                     'date_sk': date_sk,
                     'trl': trl_value,
-                    # FIXED: Set metrics to NULL instead of random values
-                    'maturity_score': None,
-                    'innovation_score': None,
-                    'market_score': None,
-                    'risk_assessment': None,
+                    'maturity_score': maturity_score,
+                    'innovation_score': innovation_score,
+                    'market_score': market_score,
+                    'risk_assessment': risk_assessment,
                     'created_at': datetime.utcnow()
                 }
                 
@@ -363,85 +400,161 @@ class DataTransformer:
         
         logger.info(f"Created technology fact table with {len(fact_tech)} records")
         return fact_tech
+
+    def _calculate_maturity_score(self, pub_row: pd.Series, trl_value: Optional[int]) -> float:
+        """Calculate maturity score based on TRL and publication data"""
+        score = 0.0
+        
+        # Base score from TRL (0-9 scale to 0-40 points)
+        if trl_value is not None and 1 <= trl_value <= 9:
+            score += (trl_value / 9) * 40
+        
+        # Add points for publication maturity indicators
+        maturity = pub_row.get('Maturité', 0)
+        if pd.notna(maturity) and isinstance(maturity, (int, float)):
+            score += min(maturity * 10, 30)  # Up to 30 points
+        
+        # Add points for research domain maturity
+        research_domain = str(pub_row.get('Research Domain', '')).lower()
+        if 'clinical' in research_domain or 'trial' in research_domain:
+            score += 20  # Clinical stage = more mature
+        elif 'preclinical' in research_domain:
+            score += 10  # Preclinical = moderate maturity
+        
+        # Add points for article type
+        article_type = str(pub_row.get('Article Type', '')).lower()
+        if 'review' in article_type:
+            score += 10  # Review articles indicate established field
+        
+        return min(score, 100.0)  # Cap at 100
+
+    def _calculate_innovation_score(self, pub_row: pd.Series) -> float:
+        """Calculate innovation score based on publication characteristics"""
+        score = 50.0  # Base score
+        
+        # Innovation keywords in title/summary
+        title = str(pub_row.get('Titre', '')).lower()
+        summary = str(pub_row.get('Résumé', '')).lower()
+        keywords = str(pub_row.get('Mots-clés', '')).lower()
+        
+        innovation_terms = [
+            'novel', 'innovative', 'breakthrough', 'cutting-edge', 'advanced',
+            'revolutionary', 'pioneering', 'first-time', 'unprecedented',
+            'nanoparticle', 'crispr', 'gene therapy', 'artificial intelligence',
+            'machine learning', 'biomarker', 'personalized', 'precision'
+        ]
+        
+        innovation_count = 0
+        all_text = f"{title} {summary} {keywords}"
+        for term in innovation_terms:
+            if term in all_text:
+                innovation_count += 1
+        
+        # Add points for innovation indicators
+        score += min(innovation_count * 5, 30)  # Up to 30 bonus points
+        
+        # Bonus for recent publication (more likely to be innovative)
+        pub_year = pub_row.get('Year', 2020)
+        if pd.notna(pub_year) and pub_year >= 2020:
+            score += 10
+        elif pd.notna(pub_year) and pub_year >= 2018:
+            score += 5
+        
+        return min(score, 100.0)
+
+    def _calculate_market_score(self, pub_row: pd.Series) -> float:
+        """Calculate market score based on publication market indicators"""
+        score = 30.0  # Base score
+        
+        # Market-related keywords
+        title = str(pub_row.get('Titre', '')).lower()
+        summary = str(pub_row.get('Résumé', '')).lower()
+        keywords = str(pub_row.get('Mots-clés', '')).lower()
+        
+        market_terms = [
+            'market', 'commercial', 'therapeutic', 'treatment', 'therapy',
+            'clinical', 'patient', 'drug', 'pharmaceutical', 'fda approved',
+            'regulatory', 'efficacy', 'safety', 'trial', 'study'
+        ]
+        
+        market_count = 0
+        all_text = f"{title} {summary} {keywords}"
+        for term in market_terms:
+            if term in all_text:
+                market_count += 1
+        
+        # Add points for market readiness indicators
+        score += min(market_count * 3, 25)  # Up to 25 bonus points
+        
+        # Bonus for high TRL (market readiness)
+        trl = pub_row.get('TRL', 0)
+        if pd.notna(trl) and trl >= 7:
+            score += 25  # High TRL = market ready
+        elif pd.notna(trl) and trl >= 5:
+            score += 15  # Medium TRL = approaching market
+        elif pd.notna(trl) and trl >= 3:
+            score += 10  # Low-medium TRL = early market potential
+        
+        # Bonus for clinical research domain
+        research_domain = str(pub_row.get('Research Domain', '')).lower()
+        if 'clinical' in research_domain:
+            score += 20
+        
+        return min(score, 100.0)
+
+    def _calculate_risk_assessment(self, trl_value: Optional[int], pub_row: pd.Series) -> float:
+        """Calculate risk assessment (lower score = higher risk)"""
+        score = 50.0  # Base medium risk
+        
+        # Lower TRL = higher risk (inverse relationship)
+        if trl_value is not None:
+            if trl_value >= 8:
+                score += 30  # Low risk
+            elif trl_value >= 6:
+                score += 20  # Medium-low risk
+            elif trl_value >= 4:
+                score += 10  # Medium risk
+            elif trl_value >= 2:
+                score -= 10  # Medium-high risk
+            else:
+                score -= 20  # High risk
+        
+        # Research stage risk assessment
+        research_domain = str(pub_row.get('Research Domain', '')).lower()
+        if 'clinical' in research_domain:
+            score += 15  # Clinical = lower risk
+        elif 'preclinical' in research_domain:
+            score += 5   # Preclinical = medium risk
+        else:
+            score -= 5   # Basic research = higher risk
+        
+        # Recent publications = lower risk (more active research)
+        pub_year = pub_row.get('Year', 2020)
+        if pd.notna(pub_year) and pub_year >= 2022:
+            score += 10
+        elif pd.notna(pub_year) and pub_year >= 2020:
+            score += 5
+        elif pd.notna(pub_year) and pub_year < 2018:
+            score -= 10  # Older research = higher risk
+        
+        return min(max(score, 0.0), 100.0)  # Keep between 0-100
     
-    def _transform_financial_facts(self, companies_df: pd.DataFrame) -> pd.DataFrame:
-        """Create financial fact table"""
-        logger.info("Creating financial fact table...")
+    def save_transformed_data(self) -> None:
+        """Save all transformed data to parquet files"""
+        self.processed_path.mkdir(parents=True, exist_ok=True)
         
-        fact_fin = companies_df.copy()
+        # Save dimensions
+        for name, df in self.dimensions.items():
+            file_path = self.processed_path / f"{name}.parquet"
+            df.to_parquet(file_path, engine='pyarrow', compression='snappy')
+            logger.info(f"Saved {name} to {file_path}")
         
-        # Clean company names
-        fact_fin['entityName'] = fact_fin['entityName'].str.strip().str.upper()
-        
-        # Create date_sk from fiscal year and period
-        quarter_to_month = {'Q1': '01', 'Q2': '04', 'Q3': '07', 'Q4': '10', 'FY': '12'}
-        
-        def create_date_sk(row):
-            try:
-                year = int(row['fiscalYear'])
-                period = str(row['period']) if pd.notna(row['period']) else 'FY'
-                month = quarter_to_month.get(period, '12')
-                return int(f"{year}{month}01")
-            except:
-                return 20200101
-        
-        fact_fin['date_sk'] = fact_fin.apply(create_date_sk, axis=1)
-        
-        # Rename columns
-        column_mapping = {
-            'entityName': 'company_natural_key',
-            'Revenues': 'revenues',
-            'NetIncomeLoss': 'net_income',
-            'OperatingIncomeLoss': 'operating_income',
-            'ResearchAndDevelopmentExpense': 'rd_expenses',
-            'Assets': 'assets',
-            'Liabilities': 'liabilities',
-            'StockholdersEquity': 'stockholders_equity',
-            'CashAndCashEquivalentsAtCarryingValue': 'cash_and_equivalents',
-            'OperatingCashFlow': 'operating_cash_flow',
-            'Goodwill': 'goodwill',
-            'IntangibleAssetsNetExcludingGoodwill': 'intangible_assets',
-            'PatentsIssued': 'patents_issued',
-            'dataCompleteness': 'data_completeness',
-            'dataFreshness': 'data_freshness',
-            'fiscalYear': 'fiscal_year',
-            'period': 'fiscal_period'
-        }
-        fact_fin = fact_fin.rename(columns=column_mapping)
-        
-        # Convert numeric columns
-        numeric_columns = ['revenues', 'net_income', 'operating_income', 'rd_expenses',
-                          'assets', 'liabilities', 'stockholders_equity', 
-                          'cash_and_equivalents', 'operating_cash_flow', 
-                          'goodwill', 'intangible_assets', 'patents_issued']
-        
-        for col in numeric_columns:
-            if col in fact_fin.columns:
-                fact_fin[col] = pd.to_numeric(fact_fin[col], errors='coerce')
-        
-        # Add metadata
-        fact_fin['created_at'] = datetime.utcnow()
-        fact_fin['updated_at'] = datetime.utcnow()
-        
-        # Select columns
-        columns = ['company_natural_key', 'date_sk', 'revenues', 'net_income', 
-                  'operating_income', 'rd_expenses', 'assets', 'liabilities',
-                  'stockholders_equity', 'cash_and_equivalents', 
-                  'operating_cash_flow', 'goodwill', 'intangible_assets',
-                  'patents_issued', 'data_completeness', 'data_freshness',
-                  'fiscal_year', 'fiscal_period', 'created_at', 'updated_at']
-        
-        fact_fin = fact_fin[[col for col in columns if col in fact_fin.columns]]
-        
-        # CRITICAL: Respect granularity - remove duplicates
-        fact_fin = fact_fin.drop_duplicates(
-            subset=['company_natural_key', 'fiscal_year', 'fiscal_period'],
-            keep='last'  # Keep most recent data
-        )
-        
-        logger.info(f"Created financial fact table with {len(fact_fin)} records")
-        return fact_fin
-    
+        # Save facts
+        for name, df in self.facts.items():
+            file_path = self.processed_path / f"{name}.parquet"
+            df.to_parquet(file_path, engine='pyarrow', compression='snappy')
+            logger.info(f"Saved {name} to {file_path}")
+
     def _transform_scoring_facts(self, companies_df: pd.DataFrame) -> pd.DataFrame:
         """Create scoring fact table"""
         logger.info("Creating scoring fact table...")
@@ -473,16 +586,19 @@ class DataTransformer:
                 growth_score = self._calculate_growth_score(company_financials)
                 patent_score = self._calculate_patent_score(company_financials)
                 
+                # FIXED: Calculate actual market score instead of hardcoded 50.0
+                market_score = self._calculate_company_market_score(company_financials)
+                
                 # Use end of fiscal year as date
                 date_sk = int(f"{int(latest_year)}1231")
                 
                 scoring_record = {
                     'company_natural_key': company_name,
                     'date_sk': date_sk,
-                    'rd_score': rd_score if rd_score is not None else 50.0,  # Default to 50 if NULL
+                    'rd_score': rd_score if rd_score is not None else 50.0,
                     'cash_score': cash_score if cash_score is not None else 50.0,
-                    'market_score': 50.0,  # Default market score
-                    'patent_score': patent_score if patent_score is not None else 0.0,  # Default to 0 if no patents
+                    'market_score': market_score if market_score is not None else 50.0,  # FIXED
+                    'patent_score': patent_score if patent_score is not None else 0.0,
                     'growth_score': growth_score if growth_score is not None else 50.0,
                     'total_score': None,  # Will calculate below
                     'scoring_version': '1.0',
@@ -526,98 +642,326 @@ class DataTransformer:
         
         logger.info(f"Created scoring fact table with {len(fact_scoring)} records")
         return fact_scoring
+
+    def _transform_financial_facts(self, companies_df: pd.DataFrame) -> pd.DataFrame:
+        """Create financial fact table using ONLY actual dataset columns"""
+        logger.info("Creating financial fact table...")
     
-    def _calculate_rd_score(self, financials: pd.DataFrame) -> float:
-        """Calculate R&D score based on R&D intensity"""
-        rd_expense = financials['ResearchAndDevelopmentExpense'].sum()
-        revenue = financials['Revenues'].sum()
+        # LOG available columns for debugging
+        logger.info(f"Available columns in companies data: {list(companies_df.columns)}")
+    
+        # Prepare data
+        companies_clean = companies_df.copy()
+        companies_clean['entityName'] = companies_clean['entityName'].str.strip().str.upper()
+    
+        fact_financial_list = []
+    
+        # Create financial records for each company-year combination
+        for _, row in companies_clean.iterrows():
+            if pd.isna(row['fiscalYear']) or pd.isna(row['entityName']):
+                continue
+            
+            # Create date_sk from fiscal year (use end of year)
+            fiscal_year = int(row['fiscalYear'])
+            date_sk = int(f"{fiscal_year}1231")
+            
+            # FIXED: Use ONLY the actual columns from your dataset
+            fact_record = {
+                'company_natural_key': row['entityName'],
+                'date_sk': date_sk,
+                'fiscal_year': fiscal_year,
+                'fiscal_period': 'Annual',  # Annual data
+                
+                # Map to ACTUAL column names from your dataset
+                'revenues': self._safe_numeric(row.get('Revenues')),
+                'net_income': self._safe_numeric(row.get('NetIncomeLoss')),
+                'operating_income': self._safe_numeric(row.get('OperatingIncomeLoss')),
+                
+                # Assets and Liabilities - use actual column names
+                'total_assets': self._safe_numeric(row.get('Assets')),
+                'total_liabilities': self._safe_numeric(row.get('Liabilities')),
+                'stockholders_equity': self._safe_numeric(row.get('StockholdersEquity')),
+                
+                # Cash - use actual column name
+                'cash_and_equivalents': self._safe_numeric(row.get('CashAndCashEquivalentsAtCarryingValue')),
+                
+                # R&D - use actual column name
+                'rd_expenses': self._safe_numeric(row.get('ResearchAndDevelopmentExpense')),
+                
+                # Cash flow - use actual column name
+                'operating_cash_flow': self._safe_numeric(row.get('OperatingCashFlow')),
+                
+                # Intangible assets - use actual column names
+                'goodwill': self._safe_numeric(row.get('Goodwill')),
+                'intangible_assets': self._safe_numeric(row.get('IntangibleAssetsNetExcludingGoodwill')),
+                
+                # Patents - use actual column name
+                'patents_issued': self._safe_numeric(row.get('PatentsIssued'), is_integer=True),
+                
+                # Data quality from dataset
+                'data_completeness': self._safe_numeric(row.get('dataCompleteness', 1.0)),
+                'data_freshness': row.get('dataFreshness', 'Current'),
+                
+                'created_at': datetime.utcnow()
+            }
+            
+            # Calculate derived metrics ONLY if we have the base data
+            if fact_record['revenues'] and fact_record['revenues'] > 0:
+                if fact_record['rd_expenses']:
+                    fact_record['rd_intensity'] = fact_record['rd_expenses'] / fact_record['revenues']
+                else:
+                    fact_record['rd_intensity'] = None
+                
+                fact_record['net_margin'] = (fact_record['net_income'] or 0) / fact_record['revenues']
+            else:
+                fact_record['rd_intensity'] = None
+                fact_record['net_margin'] = None
+            
+            if fact_record['total_assets'] and fact_record['total_assets'] > 0:
+                fact_record['roa'] = (fact_record['net_income'] or 0) / fact_record['total_assets']
+            else:
+                fact_record['roa'] = None
+            
+            if fact_record['stockholders_equity'] and fact_record['stockholders_equity'] > 0:
+                fact_record['roe'] = (fact_record['net_income'] or 0) / fact_record['stockholders_equity']
+            else:
+                fact_record['roe'] = None
         
+            fact_financial_list.append(fact_record)
+    
+        fact_financial = pd.DataFrame(fact_financial_list)
+    
+        # CRITICAL: Respect granularity - one record per company per fiscal year
+        if not fact_financial.empty:
+            fact_financial = fact_financial.drop_duplicates(
+                subset=['company_natural_key', 'date_sk'],
+                keep='last'
+            )
+    
+        logger.info(f"Created financial fact table with {len(fact_financial)} records")
+    
+        # Log what we actually created
+        logger.info("Financial fact columns with data:")
+        for col in fact_financial.columns:
+            non_null_count = fact_financial[col].notna().sum()
+            if non_null_count > 0:
+                logger.info(f"  - {col}: {non_null_count}/{len(fact_financial)} non-null values")
+    
+        return fact_financial
+
+    def _safe_numeric(self, value, is_integer: bool = False):
+        """Safely convert value to numeric, handling various edge cases"""
+        if pd.isna(value) or value == '' or str(value).lower() in ['nan', 'none', 'null']:
+            return None
+        
+        try:
+            numeric_value = pd.to_numeric(value, errors='coerce')
+            if pd.isna(numeric_value):
+                return None
+            
+            if is_integer:
+                return int(numeric_value)
+            else:
+                return float(numeric_value)
+        except:
+            return None
+
+    def _calculate_rd_score(self, financials: pd.DataFrame) -> float:
+        """Calculate R&D score based on R&D investment"""
+        if financials.empty:
+            return 50.0
+        
+        latest = financials.iloc[-1]
+        rd_expense = latest.get('ResearchAndDevelopmentExpense', 0)
+        revenues = latest.get('Revenues', 0)
+        
+        if pd.isna(rd_expense) or pd.isna(revenues) or revenues <= 0:
+            return 50.0
+        
+        rd_intensity = rd_expense / revenues
+        
+        # Score based on R&D intensity
+        if rd_intensity > 0.20:  # > 20%
+            return 90.0
+        elif rd_intensity > 0.15:  # > 15%
+            return 80.0
+        elif rd_intensity > 0.10:  # > 10%
+            return 70.0
+        elif rd_intensity > 0.05:  # > 5%
+            return 60.0
+        elif rd_intensity > 0.02:  # > 2%
+            return 50.0
+        else:
+            return 30.0
+
+    def _calculate_cash_score(self, financials: pd.DataFrame) -> float:
+        """Calculate cash score based on cash position"""
+        if financials.empty:
+            return 50.0
+        
+        latest = financials.iloc[-1]
+        cash = latest.get('CashAndCashEquivalents', 0)
+        total_assets = latest.get('TotalAssets', 0)
+        
+        if pd.isna(cash) or pd.isna(total_assets) or total_assets <= 0:
+            return 50.0
+        
+        cash_ratio = cash / total_assets
+        
+        # Score based on cash ratio
+        if cash_ratio > 0.30:  # > 30%
+            return 90.0
+        elif cash_ratio > 0.20:  # > 20%
+            return 80.0
+        elif cash_ratio > 0.15:  # > 15%
+            return 70.0
+        elif cash_ratio > 0.10:  # > 10%
+            return 60.0
+        elif cash_ratio > 0.05:  # > 5%
+            return 50.0
+        else:
+            return 30.0
+
+    def _calculate_growth_score(self, financials: pd.DataFrame) -> float:
+        """Calculate growth score based on revenue growth"""
+        if len(financials) < 2:
+            return 50.0
+        
+        # Sort by fiscal year
+        sorted_financials = financials.sort_values('fiscalYear')
+        
+        # Get latest two years
+        latest = sorted_financials.iloc[-1]
+        previous = sorted_financials.iloc[-2]
+        
+        latest_revenue = latest.get('Revenues', 0)
+        previous_revenue = previous.get('Revenues', 0)
+        
+        if pd.isna(latest_revenue) or pd.isna(previous_revenue) or previous_revenue <= 0:
+            return 50.0
+        
+        growth_rate = (latest_revenue - previous_revenue) / previous_revenue
+        
+        # Score based on growth rate
+        if growth_rate > 0.50:  # > 50%
+            return 95.0
+        elif growth_rate > 0.30:  # > 30%
+            return 85.0
+        elif growth_rate > 0.20:  # > 20%
+            return 75.0
+        elif growth_rate > 0.10:  # > 10%
+            return 65.0
+        elif growth_rate > 0.05:  # > 5%
+            return 55.0
+        elif growth_rate > 0:      # Positive growth
+            return 50.0
+        elif growth_rate > -0.10:  # Small decline
+            return 40.0
+        else:                      # Significant decline
+            return 20.0
+
+    def _calculate_patent_score(self, financials: pd.DataFrame) -> float:
+        """Calculate patent score based on patent portfolio"""
+        if financials.empty:
+            return 0.0
+        
+        latest = financials.iloc[-1]
+        patents = latest.get('PatentsIssued', 0)
+        
+        if pd.isna(patents) or patents <= 0:
+            return 0.0
+        
+        # Score based on patent count
+        if patents > 1000:
+            return 100.0
+        elif patents > 500:
+            return 90.0
+        elif patents > 200:
+            return 80.0
+        elif patents > 100:
+            return 70.0
+        elif patents > 50:
+            return 60.0
+        elif patents > 20:
+            return 50.0
+        elif patents > 10:
+            return 40.0
+        elif patents > 5:
+            return 30.0
+        else:
+            return 20.0
+
+    def _calculate_company_market_score(self, financials: pd.DataFrame) -> float:
+        """Calculate market score based on company financials and market position"""
+        if financials.empty:
+            return 50.0  # Default medium score
+        
+        score = 30.0  # Base score
+        
+        # Get latest financial data
+        latest = financials.iloc[-1]
+        
+        # Revenue size indicates market presence
+        revenue = latest.get('Revenues', 0)
+        if pd.notna(revenue) and revenue > 0:
+            if revenue > 10_000_000_000:  # > $10B
+                score += 25
+            elif revenue > 1_000_000_000:  # > $1B
+                score += 20
+            elif revenue > 100_000_000:   # > $100M
+                score += 15
+            elif revenue > 10_000_000:    # > $10M
+                score += 10
+            else:
+                score += 5
+        
+        # Market cap proxy (stockholders equity)
+        equity = latest.get('StockholdersEquity', 0)
+        if pd.notna(equity) and equity > 0:
+            if equity > 5_000_000_000:    # > $5B equity
+                score += 20
+            elif equity > 1_000_000_000:  # > $1B equity
+                score += 15
+            elif equity > 100_000_000:    # > $100M equity
+                score += 10
+            else:
+                score += 5
+        
+        # Patents indicate market competitive advantage
+        patents = latest.get('PatentsIssued', 0)
+        if pd.notna(patents) and patents > 0:
+            if patents > 100:
+                score += 15
+            elif patents > 50:
+                score += 10
+            elif patents > 10:
+                score += 5
+            else:
+                score += 2
+        
+        # R&D investment indicates market innovation
+        rd_expense = latest.get('ResearchAndDevelopmentExpense', 0)
         if pd.notna(rd_expense) and pd.notna(revenue) and revenue > 0:
             rd_intensity = rd_expense / revenue
-            # Score: 0-100 based on R&D intensity (capped at 20% = 100 score)
-            # Ensure score is between 0 and 100
-            score = min(rd_intensity * 500, 100)
-            return max(0, score)  # Ensure non-negative
-        return None
-    
-    def _calculate_cash_score(self, financials: pd.DataFrame) -> float:
-        """Calculate cash score based on cash ratio"""
-        # Get the latest values safely
-        if financials.empty:
-            return None
-            
-        cash = financials['CashAndCashEquivalentsAtCarryingValue'].iloc[-1]
-        liabilities = financials['Liabilities'].iloc[-1]
+            if rd_intensity > 0.15:  # High R&D intensity
+                score += 10
+            elif rd_intensity > 0.05:
+                score += 5
         
-        if pd.notna(cash) and pd.notna(liabilities) and liabilities > 0:
-            cash_ratio = cash / liabilities
-            # Score: 0-100 based on cash ratio (1.0 = 100 score)
-            # Ensure score is between 0 and 100
-            score = min(cash_ratio * 100, 100)
-            return max(0, score)  # Ensure non-negative
-        return None
-    
-    def _calculate_patent_score(self, financials: pd.DataFrame) -> float:
-        """Calculate patent score"""
-        if financials.empty:
-            return None
-            
-        patents = financials['PatentsIssued'].iloc[-1]
-        
-        if pd.notna(patents) and patents > 0:
-            # Simple scoring: more patents = higher score (capped at 50 patents = 100 score)
-            # Ensure score is between 0 and 100
-            score = min(patents * 2, 100)
-            return max(0, score)  # Ensure non-negative
-        return None
-    
-    def _calculate_growth_score(self, financials: pd.DataFrame) -> float:
-        """Calculate growth score based on revenue trend"""
-        if len(financials) < 2:
-            return None
-            
-        revenues = financials.sort_values('fiscalYear')['Revenues'].values
-        
-        # Remove NaN values
-        revenues = [r for r in revenues if pd.notna(r) and r >= 0]
-        
-        if len(revenues) >= 2 and revenues[0] > 0:
-            growth_rate = (revenues[-1] - revenues[0]) / revenues[0]
-            # Score: 50 base + growth rate (20% growth = 70 score)
-            # Cap negative growth at -100% to keep score >= 0
-            # Cap positive growth to keep score <= 100
-            score = 50 + (growth_rate * 100)
-            # Ensure score is strictly between 0 and 100
-            return max(0, min(100, score))
-        return None
-    
+        return min(score, 100.0)
+
     def _get_recommendation(self, total_score: float) -> str:
         """Get investment recommendation based on total score"""
         if total_score >= 80:
-            return 'BUY'
+            return 'Strong Buy'
+        elif total_score >= 70:
+            return 'Buy'
         elif total_score >= 60:
-            return 'HOLD'
+            return 'Hold'
         elif total_score >= 40:
-            return 'WATCH'
+            return 'Weak Hold'
         else:
-            return 'SELL'
-    
-    def save_transformed_data(self) -> None:
-        """Save all transformed data to parquet files"""
-        self.processed_path.mkdir(parents=True, exist_ok=True)
-        
-        # Save dimensions
-        for name, df in self.dimensions.items():
-            file_path = self.processed_path / f"{name}.parquet"
-            df.to_parquet(file_path, engine='pyarrow', compression='snappy')
-            logger.info(f"Saved {name} to {file_path}")
-        
-        # Save facts
-        for name, df in self.facts.items():
-            file_path = self.processed_path / f"{name}.parquet"
-            df.to_parquet(file_path, engine='pyarrow', compression='snappy')
-            logger.info(f"Saved {name} to {file_path}")
-
+            return 'Sell'
 
 # Standalone transformation function
 def transform_data(extracted_data: Dict[str, pd.DataFrame], 

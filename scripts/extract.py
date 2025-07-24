@@ -110,29 +110,117 @@ class DataExtractor:
            raise
     
     def _extract_biotech_companies(self) -> pd.DataFrame:
-        """Extract biotech companies financial data from CSV"""
+        """Extract biotech companies financial data from CSV with proper encoding detection"""
         file_path = self.raw_path / self.config['files']['biotech_companies']
         logger.info(f"Extracting biotech companies from {file_path}")
         
         try:
-            # Read CSV with proper encoding
-            df = pd.read_csv(file_path, encoding='iso-8859-1')
+            # Try multiple encodings in order of preference
+            encodings_to_try = [
+                'utf-8-sig',        # UTF-8 with BOM
+                'utf-8',            # Standard UTF-8
+                'latin1',           # ISO-8859-1 (handles most Western European chars)
+                'cp1252',           # Windows-1252 (Windows default)
+                'iso-8859-1',       # Latin-1
+                'utf-16',           # UTF-16 with BOM detection
+            ]
             
-            logger.info(f"Loaded {len(df)} company records with columns: {list(df.columns)}")
+            df = None
+            encoding_used = None
             
+            for encoding in encodings_to_try:
+                try:
+                    logger.info(f"Trying encoding: {encoding}")
+                    df = pd.read_csv(file_path, encoding=encoding)
+                    encoding_used = encoding
+                    logger.info(f"✅ Successfully loaded with encoding: {encoding}")
+                    break
+                except UnicodeDecodeError as e:
+                    logger.warning(f"❌ Failed with {encoding}: {str(e)}")
+                    continue
+                except Exception as e:
+                    logger.warning(f"❌ Unexpected error with {encoding}: {str(e)}")
+                    continue
             
+            if df is None:
+                # Last resort: try with error handling
+                logger.warning("All encodings failed, trying with error handling...")
+                try:
+                    df = pd.read_csv(file_path, encoding='utf-8', errors='replace')
+                    encoding_used = 'utf-8 (with error replacement)'
+                    logger.info("✅ Loaded with error replacement")
+                except Exception as e:
+                    logger.error(f"Complete failure to read file: {str(e)}")
+                    raise
+            
+            logger.info(f"File loaded successfully using encoding: {encoding_used}")
+            logger.info(f"Loaded {len(df)} company records")
+            logger.info(f"Actual columns in dataset: {list(df.columns)}")
+            
+            # Clean up any encoding artifacts if we used error replacement
+            if 'error replacement' in str(encoding_used):
+                # Replace common replacement characters
+                for col in df.select_dtypes(include=['object']).columns:
+                    df[col] = df[col].astype(str).str.replace('�', '', regex=False)
+            
+            # Log sample of first few rows to understand the data
+            logger.info("Sample data (first 3 rows):")
+            try:
+                logger.info(df.head(3).to_string())
+            except Exception as e:
+                logger.warning(f"Could not display sample data: {str(e)}")
+            
+            # Check for data availability in key columns
+            expected_columns = [
+                'cik', 'entityName', 'ticker', 'fiscalYear', 'period',
+                'Revenues', 'NetIncomeLoss', 'OperatingIncomeLoss', 'Assets', 
+                'Liabilities', 'StockholdersEquity', 'CashAndCashEquivalentsAtCarryingValue',
+                'ResearchAndDevelopmentExpense', 'OperatingCashFlow', 'Goodwill',
+                'IntangibleAssetsNetExcludingGoodwill', 'PatentsIssued',
+                'dataCompleteness', 'dataFreshness'
+            ]
+            
+            logger.info("Column availability check:")
+            available_columns = []
+            missing_columns = []
+            
+            for col in expected_columns:
+                if col in df.columns:
+                    available_columns.append(col)
+                    non_null_count = df[col].notna().sum()
+                    non_zero_count = (df[col].fillna(0) != 0).sum() if pd.api.types.is_numeric_dtype(df[col]) else non_null_count
+                    logger.info(f"  ✅ {col}: {non_null_count}/{len(df)} non-null, {non_zero_count} non-zero values")
+                else:
+                    missing_columns.append(col)
+                    logger.warning(f"  ❌ {col}: COLUMN NOT FOUND!")
+            
+            logger.info(f"Available columns: {len(available_columns)}/{len(expected_columns)}")
+            
+            if missing_columns:
+                logger.warning(f"Missing expected columns: {missing_columns}")
+                logger.info(f"Actual columns in file: {list(df.columns)}")
+            
+            # Clean PatentsIssued column properly if it exists
             if 'PatentsIssued' in df.columns:
-              invalid_rows = df[df['PatentsIssued'].apply(lambda x: pd.isna(x) or isinstance(x, str) or (isinstance(x, float) and not x.is_integer()))]
-              if not invalid_rows.empty:
-                logger.warning(f"Found {len(invalid_rows)} rows with invalid PatentsIssued values:")
-                logger.warning(invalid_rows[['entityName', 'PatentsIssued', 'fiscalYear']].head().to_string())
+                logger.info("Cleaning PatentsIssued column...")
+                original_dtype = df['PatentsIssued'].dtype
+                df['PatentsIssued'] = pd.to_numeric(df['PatentsIssued'], errors='coerce').fillna(0).astype(int)
+                logger.info(f"PatentsIssued: converted from {original_dtype} to int64")
+            
+            # Clean fiscal year if it exists
+            if 'fiscalYear' in df.columns:
+                logger.info("Cleaning fiscalYear column...")
+                df['fiscalYear'] = pd.to_numeric(df['fiscalYear'], errors='coerce')
+                invalid_years = df['fiscalYear'].isna().sum()
+                if invalid_years > 0:
+                    logger.warning(f"Found {invalid_years} invalid fiscal years")
             
             # Basic validation
             self._validate_extraction(df, 'Biotech Companies', 
-                                    required_cols=['entityName', 'fiscalYear'])
-            
+                                required_cols=['entityName'])  # Minimum required
+        
             return df
-            
+        
         except Exception as e:
             logger.error(f"Failed to extract biotech companies: {str(e)}")
             raise

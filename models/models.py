@@ -66,9 +66,9 @@ class DimPublication(Base):
     trl = Column(Integer)
     trl_stage = Column(String(50))
     trl_category = Column(String(100))  # From source data
-    maturity = Column(Float)  # From source data
+    maturity = Column(Float)  # Changed from Integer to Float
     impact_factor = Column(Float)
-    citation_count = Column(Integer)
+    citation_count = Column(Float)  # Changed from Integer to Float to handle large values
     peer_reviewed = Column(Boolean, default=True)
     publication_date = Column(Date)
     year = Column(Integer)  # From source data
@@ -203,7 +203,7 @@ class FactTechnology(Base):
 
 class FactFinancial(Base):
     """
-    Financial fact table
+    Financial fact table - matching actual dataset columns
     Grain: One row per company per fiscal period
     """
     __tablename__ = 'fact_financial'
@@ -215,27 +215,33 @@ class FactFinancial(Base):
     company_sk = Column(Integer, ForeignKey('dim_company.company_sk'), nullable=False)
     date_sk = Column(Integer, ForeignKey('dim_date.date_sk'), nullable=False)
     
-    # Financial metrics (in USD) - Changed to Float to handle large values
-    revenues = Column(Float)
-    net_income = Column(Float)
-    operating_income = Column(Float)
-    rd_expenses = Column(Float)
-    assets = Column(Float)
-    liabilities = Column(Float)
-    stockholders_equity = Column(Float)
-    cash_and_equivalents = Column(Float)
-    operating_cash_flow = Column(Float)
-    goodwill = Column(Float)
-    intangible_assets = Column(Float)
-    patents_issued = Column(Integer)
+    # Core Financial Metrics - ONLY from actual dataset
+    revenues = Column(Float)                    # Revenues
+    net_income = Column(Float)                  # NetIncomeLoss
+    operating_income = Column(Float)            # OperatingIncomeLoss
+    total_assets = Column(Float)                # Assets
+    total_liabilities = Column(Float)           # Liabilities
+    stockholders_equity = Column(Float)         # StockholdersEquity
+    cash_and_equivalents = Column(Float)        # CashAndCashEquivalentsAtCarryingValue
+    rd_expenses = Column(Float)                 # ResearchAndDevelopmentExpense
+    operating_cash_flow = Column(Float)         # OperatingCashFlow
+    goodwill = Column(Float)                    # Goodwill
+    intangible_assets = Column(Float)           # IntangibleAssetsNetExcludingGoodwill
+    patents_issued = Column(Integer)            # PatentsIssued
     
-    # Data quality indicators
-    data_completeness = Column(Float)
-    data_freshness = Column(String(50))
+    # Calculated Financial Ratios
+    rd_intensity = Column(Float)                # R&D / Revenue
+    net_margin = Column(Float)                  # Net Income / Revenue
+    roa = Column(Float)                         # Return on Assets
+    roe = Column(Float)                         # Return on Equity
+    
+    # Data quality from dataset
+    data_completeness = Column(Float)           # dataCompleteness
+    data_freshness = Column(String(50))         # dataFreshness
     
     # Period identifiers
     fiscal_year = Column(Integer, nullable=False)
-    fiscal_period = Column(String(10), nullable=False)
+    fiscal_period = Column(String(10), nullable=False, default='Annual')
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
