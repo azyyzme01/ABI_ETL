@@ -1,3 +1,56 @@
 timestamp,duration_seconds,success,error,extraction_status,extraction_records,transformation_status,transformation_records,loading_status,loading_records,validation_status,validation_checks,validation_passed,validation_failed
 2025-07-24T03:10:52.604848,7.06,False,'utf-8' codec can't decode byte 0xc9 in position 759: invalid continuation byte,failed,0,pending,0,pending,0,pending,0,0,0
 2025-07-24T03:14:53.732897,114.16,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T17:18:00.733506,198.2,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T18:36:55.894126,12.71,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T18:39:02.833100,12.34,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T18:43:29.940559,1.4,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",pending,0,pending,0,pending,0,failed,0,0,0
+2025-08-07T18:43:59.256003,13.23,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T18:45:29.942716,61.87,True,,success,34138,success,63100,success,63100,pending,0,0,0
+2025-08-07T18:47:50.799211,12.82,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T18:49:03.692027,40.48,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T18:51:25.544753,109.36,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T18:54:16.972960,102.69,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T19:10:41.574996,101.65,False,'performance_indexes',success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T19:13:24.640572,98.94,False,"(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: 
+                SELECT 1 FROM pg_indexes 
+                WHERE indexname = 'idx_perf_dim_pub_year_cat'
+                ]
+(Background on this error at: https://sqlalche.me/e/14/2j85)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T19:15:49.042395,98.45,False,'Connection' object has no attribute 'rollback',success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T19:18:30.114239,99.14,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T19:38:52.644636,127.59,True,,success,34138,success,63100,success,63100,success,27,25,0
+2025-08-07T20:20:29.829141,11.52,False,'technology',success,34138,failed,0,pending,0,pending,0,0,0
+2025-08-07T20:27:45.443177,12.56,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T20:29:06.649008,12.23,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T20:50:24.218425,12.46,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63200,failed,0,pending,0,0,0
+2025-08-07T20:53:35.648059,0.66,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",pending,0,pending,0,pending,0,failed,0,0,0
+2025-08-07T20:54:55.539439,11.94,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63200,failed,0,pending,0,0,0
+2025-08-07T21:59:05.074420,15.93,False,"(psycopg2.OperationalError) connection to server at ""localhost"" (::1), port 5432 failed: FATAL:  password authentication failed for user ""abi_user""
+
+(Background on this error at: https://sqlalche.me/e/14/e3q8)",success,34138,success,63100,failed,0,pending,0,0,0
+2025-08-07T22:02:52.844933,100.16,True,,success,34138,success,63175,success,63175,success,27,24,0

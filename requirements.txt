@@ -17,6 +17,10 @@ pyyaml==6.0.1
 great-expectations==0.18.7
 pandera==0.17.2
 
+# Orchestration and monitoring
+prefect==2.14.21
+prefect-sqlalchemy==0.4.1
+
 # Logging and monitoring
 loguru==0.7.2
 

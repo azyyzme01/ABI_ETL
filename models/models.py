@@ -18,7 +18,7 @@ Base = declarative_base()
 # ============================================
 
 class DimTechnology(Base):
-    """Technology dimension table with unique constraint on natural key"""
+    """Technology dimension table with temporal predictions support"""
     __tablename__ = 'dim_technology'
     
     # Surrogate key - autoincrement handled by database
@@ -26,6 +26,7 @@ class DimTechnology(Base):
     
     # Natural key and attributes
     technology = Column(String(500), nullable=False)
+    prediction_year = Column(Integer, nullable=False)  # ADD: Support temporal predictions
     current_trl = Column(Integer)
     predicted_trl = Column(Float)  # Can be decimal in predictions
     trl_change = Column(Float)
@@ -40,10 +41,11 @@ class DimTechnology(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # CRITICAL: Unique constraint on natural key
+    # FIXED: Unique constraint on technology + prediction_year (supports temporal predictions)
     __table_args__ = (
-        UniqueConstraint('technology', name='uq_technology_name'),
+        UniqueConstraint('technology', 'prediction_year', name='uq_technology_year'),
         Index('idx_technology_name', 'technology'),
+        Index('idx_technology_year', 'technology', 'prediction_year'),
     )
 
 

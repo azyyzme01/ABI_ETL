@@ -1,0 +1,44 @@
+config_version: 1.0.0
+duration_seconds: 12.341801881790161
+error: '(psycopg2.OperationalError) connection to server at "localhost" (::1), port
+  5432 failed: FATAL:  password authentication failed for user "abi_user"
+
+
+  (Background on this error at: https://sqlalche.me/e/14/e3q8)'
+metrics:
+  extraction:
+    duration: 6.721439361572266
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    duration: 0
+    error: '(psycopg2.OperationalError) connection to server at "localhost" (::1),
+      port 5432 failed: FATAL:  password authentication failed for user "abi_user"
+
+
+      (Background on this error at: https://sqlalche.me/e/14/e3q8)'
+    records: 0
+    status: failed
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 5.556228876113892
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-08-07T18:39:02.833100'

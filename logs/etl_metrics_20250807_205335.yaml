@@ -1,0 +1,31 @@
+config_version: 1.0.0
+duration_seconds: 0.6644048690795898
+error: '(psycopg2.OperationalError) connection to server at "localhost" (::1), port
+  5432 failed: FATAL:  password authentication failed for user "abi_user"
+
+
+  (Background on this error at: https://sqlalche.me/e/14/e3q8)'
+metrics:
+  extraction:
+    duration: 0
+    records: 0
+    status: pending
+  loading:
+    duration: 0
+    records: 0
+    status: pending
+  transformation:
+    duration: 0
+    records: 0
+    status: pending
+  validation:
+    checks: 0
+    duration: 0
+    error: '(psycopg2.OperationalError) connection to server at "localhost" (::1),
+      port 5432 failed: FATAL:  password authentication failed for user "abi_user"
+
+
+      (Background on this error at: https://sqlalche.me/e/14/e3q8)'
+    status: failed
+success: false
+timestamp: '2025-08-07T20:53:35.648059'

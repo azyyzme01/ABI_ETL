@@ -1,0 +1,27 @@
+config_version: 1.0.0
+duration_seconds: 11.517293930053711
+error: '''technology'''
+metrics:
+  extraction:
+    duration: 7.2987141609191895
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    duration: 0
+    records: 0
+    status: pending
+  transformation:
+    duration: 0
+    error: '''technology'''
+    records: 0
+    status: failed
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-08-07T20:20:29.829141'

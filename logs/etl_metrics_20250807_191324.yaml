@@ -1,0 +1,42 @@
+config_version: 1.0.0
+duration_seconds: 98.94442415237427
+error: "(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands\
+  \ ignored until end of transaction block\n\n[SQL: \n                SELECT 1 FROM\
+  \ pg_indexes \n                WHERE indexname = 'idx_perf_dim_pub_year_cat'\n \
+  \               ]\n(Background on this error at: https://sqlalche.me/e/14/2j85)"
+metrics:
+  extraction:
+    duration: 6.560468435287476
+    records: 34138
+    sources:
+    - trl
+    - pubmed
+    - companies
+    status: success
+  loading:
+    duration: 0
+    error: "(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted,\
+      \ commands ignored until end of transaction block\n\n[SQL: \n              \
+      \  SELECT 1 FROM pg_indexes \n                WHERE indexname = 'idx_perf_dim_pub_year_cat'\n\
+      \                ]\n(Background on this error at: https://sqlalche.me/e/14/2j85)"
+    records: 0
+    status: failed
+  transformation:
+    dimensions:
+      dim_company: 730
+      dim_date: 5844
+      dim_publication: 28481
+      dim_technology: 25
+    duration: 5.167040586471558
+    facts:
+      fact_financial: 3778
+      fact_scoring: 730
+      fact_technology: 23512
+    records: 63100
+    status: success
+  validation:
+    checks: 0
+    duration: 0
+    status: pending
+success: false
+timestamp: '2025-08-07T19:13:24.640572'

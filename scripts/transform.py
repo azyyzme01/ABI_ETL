@@ -77,10 +77,10 @@ class DataTransformer:
         start_date = pd.to_datetime(self.config['validation']['date_range']['min'])
         end_date = pd.to_datetime(self.config['validation']['date_range']['max'])
         
-        # Create date range
+        # Create date range efficiently with vectorized operations
         dates = pd.date_range(start=start_date, end=end_date, freq='D', inclusive='both')
         
-        # Build dimension
+        # Vectorized dimension building for better performance
         dim_date = pd.DataFrame({
             'date': dates,
             'date_sk': dates.strftime('%Y%m%d').astype(int),  # Special case - we generate this
@@ -91,12 +91,16 @@ class DataTransformer:
             'month_name': dates.strftime('%B'),
             'day_name': dates.strftime('%A'),
             'day_of_week': dates.dayofweek,
-            'week_of_year': dates.isocalendar().week,
+            'week_of_year': dates.isocalendar().week.astype(int),
             'is_weekend': dates.dayofweek.isin([5, 6]),
             'fiscal_year': dates.year,
             'fiscal_quarter': dates.quarter,
-            'is_holiday': False
+            'is_holiday': False  # Can be optimized with holiday library if needed
         })
+        
+        # Convert boolean to int for database compatibility
+        dim_date['is_weekend'] = dim_date['is_weekend'].astype(int)
+        dim_date['is_holiday'] = dim_date['is_holiday'].astype(int)
         
         logger.info(f"Created date dimension with {len(dim_date)} dates")
         logger.info(f"Date range: {dim_date['date'].min()} to {dim_date['date'].max()}")
@@ -104,16 +108,17 @@ class DataTransformer:
         return dim_date
     
     def _transform_technology_dimension(self, trl_df: pd.DataFrame) -> pd.DataFrame:
-        """Transform technology data into dimension table"""
+        """Transform technology data into dimension table with temporal predictions"""
         logger.info("Transforming technology dimension...")
         
         dim_tech = trl_df.copy()
         
-        # Standardize column names
+        # Standardize column names - handle temporal predictions
         column_mapping = {
             'Technology': 'technology',
             'Current_TRL': 'current_trl',
             'Predicted_TRL': 'predicted_trl',
+            'Year': 'prediction_year',  # FIXED: Map 'Year' to 'prediction_year'
             'Current_Category': 'current_category',
             'Predicted_Category': 'predicted_category',
             'Confidence_%': 'confidence_percent',
@@ -126,9 +131,15 @@ class DataTransformer:
         # Clean technology names (natural key)
         dim_tech['technology'] = dim_tech['technology'].astype(str).str.strip().str.lower()
         
-        # CRITICAL: Deduplicate by natural key (technology name)
-        # Keep the first occurrence of each technology
-        dim_tech = dim_tech.drop_duplicates(subset=['technology'], keep='first')
+        # FIXED: Handle temporal predictions - deduplicate by technology + prediction_year
+        # This allows multiple records per technology for different years
+        if 'prediction_year' in dim_tech.columns:
+            dim_tech = dim_tech.drop_duplicates(subset=['technology', 'prediction_year'], keep='first')
+            logger.info(f"Processing temporal predictions for years: {sorted(dim_tech['prediction_year'].unique())}")
+        else:
+            # Fallback: single prediction per technology
+            dim_tech = dim_tech.drop_duplicates(subset=['technology'], keep='first')
+            logger.warning("No prediction_year column found - using single prediction per technology")
         
         # Fix data types
         dim_tech['current_trl'] = pd.to_numeric(dim_tech['current_trl'], errors='coerce').fillna(0).astype(int)
@@ -152,15 +163,25 @@ class DataTransformer:
         dim_tech['created_at'] = datetime.utcnow()
         dim_tech['updated_at'] = datetime.utcnow()
         
-        # Select final columns - NO SURROGATE KEY
-        columns = ['technology', 'current_trl', 'predicted_trl', 
+        # Select final columns - Include prediction_year for temporal support
+        columns = ['technology', 'prediction_year', 'current_trl', 'predicted_trl', 
                   'trl_change', 'current_category', 'predicted_category', 
                   'change_category', 'confidence_percent', 'annual_change_rate',
                   'model_used', 'created_at', 'updated_at']
         
         dim_tech = dim_tech[[col for col in columns if col in dim_tech.columns]]
         
-        logger.info(f"Created technology dimension with {len(dim_tech)} unique technologies")
+        # Log information about temporal predictions
+        if 'prediction_year' in dim_tech.columns:
+            unique_techs = dim_tech['technology'].nunique()
+            unique_years = dim_tech['prediction_year'].nunique() if 'prediction_year' in dim_tech.columns else 1
+            total_records = len(dim_tech)
+            logger.info(f"Created technology dimension with {unique_techs} technologies × {unique_years} years = {total_records} records")
+            if 'prediction_year' in dim_tech.columns:
+                logger.info(f"Prediction years: {sorted(dim_tech['prediction_year'].unique())}")
+        else:
+            logger.info(f"Created technology dimension with {len(dim_tech)} unique technologies")
+        
         return dim_tech
     
     def _transform_publication_dimension(self, pubmed_df: pd.DataFrame) -> pd.DataFrame:

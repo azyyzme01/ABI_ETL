@@ -183,19 +183,21 @@ class DataLoader:
                 # Prepare the record
                 technology_name = row['technology']
                 
-                # First, try to get existing record
+                # First, try to get existing record (check by technology + prediction_year)
+                prediction_year = row.get('prediction_year', 2026)  # Default to 2026 if missing
                 result = conn.execute(
-                    text("SELECT technology_sk FROM dim_technology WHERE technology = :tech"),
-                    {'tech': technology_name}
+                    text("SELECT technology_sk FROM dim_technology WHERE technology = :tech AND prediction_year = :year"),
+                    {'tech': technology_name, 'year': prediction_year}
                 ).fetchone()
                 
                 if result:
-                    # Technology exists, get its surrogate key
-                    mapping[technology_name] = result[0]
+                    # Technology-year combination exists, get its surrogate key
+                    mapping[f"{technology_name}_{prediction_year}"] = result[0]
                 else:
-                    # Insert new technology
+                    # Insert new technology-year record
                     stmt = insert(DimTechnology).values(
                         technology=technology_name,
+                        prediction_year=prediction_year,
                         current_trl=row.get('current_trl'),
                         predicted_trl=row.get('predicted_trl'),
                         trl_change=row.get('trl_change'),
@@ -211,7 +213,7 @@ class DataLoader:
                     
                     # On conflict, update non-key fields
                     stmt = stmt.on_conflict_do_update(
-                        index_elements=['technology'],
+                        index_elements=['technology', 'prediction_year'],
                         set_={
                             'current_trl': stmt.excluded.current_trl,
                             'predicted_trl': stmt.excluded.predicted_trl,
@@ -228,7 +230,7 @@ class DataLoader:
                     
                     result = conn.execute(stmt).fetchone()
                     if result:
-                        mapping[technology_name] = result[0]
+                        mapping[f"{technology_name}_{prediction_year}"] = result[0]
         
         logger.info(f"Loaded {len(mapping)} technologies")
         return mapping
